@@ -12,7 +12,7 @@ OPENAI_KEY = os.environ.get("OPENAI_API_KEY") or os.environ.get("OPENAI_KEY")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
-ai_engine = OpenAI(api_key=OPENAI_KEY)
+ai_engine = OpenAI(api_key = OPENAI_KEY)
 
 def push_telegram_notification(message):
     """Transmits priority operational alerts or summaries to the device telegram tunnel."""
