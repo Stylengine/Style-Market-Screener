@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Risk & Allocation History Tracker</title>
+    <!-- Integration of Chart.js for data visualization and PapaParse for CSV parsing -->
+    <script src="https://jsdelivr.net"></script>
+    <script src="https://cloudflare.com"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: #f8fafc; 
+            color: #1e293b; 
+            margin: 30px; 
+        }
+        .container { 
+            max-width: 1100px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03); 
+            display: none; /* Kept hidden until access validation checks pass successfully */
+        }
+        h1 { 
+            color: #0f172a; 
+            border-bottom: 2px solid #e2e8f0; 
+            padding-bottom: 15px; 
+            text-align: center; 
+        }
+        .macro-bar {
+            display: flex; 
+            justify-content: space-around; 
+            background: #f1f5f9; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 25px; 
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .chart-box { 
+            position: relative; 
+            margin-top: 30px; 
+            height: 480px; 
+        }
+        .controls { 
+            text-align: center; 
+            margin: 20px 0; 
+        }
+        select { 
+            padding: 10px 25px; 
+            font-size: 16px; 
+            border-radius: 6px; 
+            border: 1px solid #cbd5e1; 
+            background: white; 
+            outline: none;
+            cursor: pointer;
+        }
+        select:focus {
+            border-color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Protected User Interface Container -->
+    <div id="protectedContainer" class="container">
+        <h1>📊 Historical Rebalancing & Technical Boundaries</h1>
+        
+        <!-- Live Macro Indices Monitor Layout -->
+        <div class="macro-bar">
+            <div id="indexSpot">📈 Nifty 50 Base: Active Strategy</div>
+            <div id="vixLevel">🛡️ Volatility Governor: Operational</div>
+        </div>
+
+        <!-- Dropdown Selection for Stock Nodes -->
+        <div class="controls">
+            <label for="tickerSelect"><b>Select Portfolio Stock Node: </b></label>
+            <select id="tickerSelect" onchange="updateChartData()"></select>
+        </div>
+
+        <!-- Dynamic Chart Rendering Target Space -->
+        <div class="chart-box">
+            <canvas id="historyChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. AUTOMATIC ACCESS CHECKING SECURITY SCRIPT
+        // ==========================================
+        const expectedToken = btoa("MySecretPassword123");
+        
+        if (sessionStorage.getItem("dashboard_auth_token") !== expectedToken) {
+            alert("🔒 Access Denied. Redirecting to verification control gateway.");
+            window.location.href = "index.html";
+        } else {
+            // Unhide UI container layer only if token verification succeeds perfectly
+            document.getElementById("protectedContainer").style.display = "block";
+            loadDatabaseRecords();
+        }
+
+        // ==========================================
+        // 2. DATA HARVESTING & CHART INTEGRATION
+        // ==========================================
+        let fullData = [];
+        let chartInstance = null;
+
+        function loadDatabaseRecords() {
+            // Asynchronously read data points stored in history.csv
+            Papa.parse("history.csv", {
+                download: true,
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    fullData = results.data;
+                    
+                    // Extract unique stock tickers to automatically generate dropdown choices
+                    const tickers = [...new Set(fullData.map(item => item.ticker))].filter(Boolean);
+                    const dropdown = document.getElementById("tickerSelect");
+                    
+                    tickers.forEach(t => {
+                        let opt = document.createElement("option");
+                        opt.value = t; 
+                        opt.textContent = t;
+                        dropdown.appendChild(opt);
+                    });
+                    
+                    // Render initial graph visualization values
+                    if(tickers.length > 0) {
+                        updateChartData();
+                    }
+                }
+            });
+        }
+
+        function updateChartData() {
+            const selectedTicker = document.getElementById("tickerSelect").value;
+            
+            // Filter and chronologically sort log data sets for selected stock
+            const assetTimeline = fullData
+                .filter(item => item.ticker === selectedTicker)
+                .sort((a,b) => new Date(a.date) - new Date(b.date));
+            
+            const labels = assetTimeline.map(item => item.date);
+            const prices = assetTimeline.map(item => item.price);
+            const floors = assetTimeline.map(item => item.floor);
+            const ceilings = assetTimeline.map(item => item.ceiling);
+            const weights = assetTimeline.map(item => item.weight);
+
+            const ctx = document.getElementById('historyChart').getContext('2d');
+            
+            // Destroy active instance frames before re-rendering new data layers
+            if (chartInstance) { chartInstance.destroy(); }
+
+            // Construct new Chart.js configuration curves
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Current Price (CMP)', data: prices, borderColor: '#2563eb', tension: 0.1, borderWidth: 3 },
+                        { label: 'Support Floor (Entry)', data: floors, borderColor: '#16a34a', borderDash:, tension: 0 },
+                        { label: 'Stop-Loss Risk Trigger', data: floors.map(f => f ? Number((f * 0.97).toFixed(1)) : null), borderColor: '#ff3b30', borderDash:, tension: 0, borderWidth: 2 },
+                        { label: 'Resistance Ceiling (Exit)', data: ceilings, borderColor: '#dc2626', borderDash:, tension: 0 },
+                        { label: 'Allocation Weight %', data: weights, borderColor: '#7c3aed', yAxisID: 'y1', borderWidth: 2, fill: false }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            title: { display: true, text: 'Valuation Price (INR)' } 
+                        },
+                        y1: { 
+                            type: 'linear', 
+                            position: 'right', 
+                            grid: { drawOnChartArea: false }, 
+                            title: { display: true, text: 'Target Portfolio Allocation Weight %' } 
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
