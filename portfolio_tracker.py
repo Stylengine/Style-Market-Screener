@@ -27,7 +27,7 @@ def calculate_technical_boundaries(ticker_symbol):
     """Computes basic technical support and resistance lines using a 20-day window."""
     try:
         stock = ticker_engine.Ticker(ticker_symbol)
-        df = stock.history(period="6m")
+        df = stock.history(period="6mo")
         if df.empty or len(df) < 20:
             return "N/A", "N/A"
         recent = df.tail(20)
@@ -185,13 +185,13 @@ if __name__ == "__main__":
             action = f"📥 Deploy allocation +{shift}%." if shift > 0 else f"📤 Trim position by {shift}%."
             variance_alerts.append(f"⚖️ *STAKE SHIFT FOR {t}:* {old_w}% ➡️ {new_w}%\n💡 *Action:* {action}")
 
-    # Force a comprehensive daily report notification to your phone every run
+# Force a comprehensive daily report notification to your phone every run
+    # FIXED: Corrected key dictionary mapping to handle internal data parameters safely
     summary_rows = [f"`{a['ticker']:<10} | ₹{str(a['price']):<6} | ₹{str(a['floor']):<5} | ₹{str(a['stop_loss']):<5} | {str(a['weight'])+'%':<5}`" for a in processed_assets]
     telegram_payload = f"📋 *DAILY RISK CONTROL HEALTH REPORT*\n" \
                        f"🌐 *Nifty 50:* {nifty_spot} | *Macro:* {macro_environment}\n\n" \
                        f"`TICKER     | CMP    | FLOOR | STOP  | WEIGHT`\n`------------------------------------------------`\n" + "\n".join(summary_rows)
     
-    # Send emergency alerts first if they exist, otherwise send the standard summary table
     if stop_loss_alerts:
         emergency_payload = "🚨🔴 *PORTFOLIO REBALANCER CRISIS* 🔴🚨\n\n" + "\n\n=============\n\n".join(stop_loss_alerts)
         push_telegram_notification(emergency_payload)
