@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gateway Login Authentication Required</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
+            background: #0f172a; 
+            color: white; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .login-card { 
+            background: #1e293b; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+            text-align: center; 
+            max-width: 400px; 
+            width: 100%; 
+        }
+        input { 
+            width: 85%; 
+            padding: 12px; 
+            margin: 20px 0; 
+            border-radius: 6px; 
+            border: 1px solid #475569; 
+            background: #0f172a; 
+            color: white; 
+            font-size: 16px; 
+            text-align: center; 
+            outline: none;
+        }
+        input:focus {
+            border-color: #3b82f6;
+        }
+        button { 
+            background: #3b82f6; 
+            color: white; 
+            border: none; 
+            padding: 12px 30px; 
+            font-size: 16px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            font-weight: bold; 
+            width: 92%;
+        }
+        button:hover { 
+            background: #2563eb; 
+        }
+        .error { 
+            color: #f43f5e; 
+            margin-top: 15px; 
+            font-size: 14px; 
+            display: none; 
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>🔒 Security Gateway</h2>
+        <p style="color: #94a3b8;">Enter decryption key passcode to view portfolio telemetry records.</p>
+        
+        <!-- Input box for user password -->
+        <input type="password" id="passkey" placeholder="Enter Secret Code" onkeydown="if(event.key==='Enter') verifyAndRedirect()">
+        <br>
+        <button onclick="verifyAndRedirect()">Unlock Dashboard</button>
+        
+        <!-- Error warning node hidden by default -->
+        <div id="err" class="error">❌ Invalid security passcode credential entered.</div>
+    </div>
+
+    <script>
+        function verifyAndRedirect() {
+            const passkey = document.getElementById("passkey").value;
+            
+            // Checks if the entered string matches your secret target key perfectly
+            if (passkey === "MySecretPassword123") {
+                // Encodes the password string to base64 to store it cleanly in the session cache
+                sessionStorage.setItem("dashboard_auth_token", btoa(passkey));
+                
+                // Routes the user to the protected charting dashboard app file
+                window.location.href = "app.html";
+            } else {
+                // Unhides the error banner if the password text verification fails
+                document.getElementById("err").style.display = "block";
+            }
+        }
+    </script>
+</body>
+</html>
