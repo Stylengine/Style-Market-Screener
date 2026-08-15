@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
+# Initialize credentials securely from GitHub Actions Secrets
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY") or os.environ.get("OPENAI_KEY")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
@@ -56,12 +57,14 @@ def push_telegram_notification(message):
     url = f"https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "Markdown"}
     try:
-        requests.post(url, json=payload, timeout=15)
+        response = requests.post(url, json=payload, timeout=15)
+        if response.status_code != 200:
+            print(f"❌ Telegram API Error: {response.text}")
     except Exception as e:
         print(f"⚠️ Notification error: {e}")
 
 if __name__ == "__main__":
-    print("🚀 Initiating Cloud Portfolio Multi-Agent Operations with Corporate Action Safeguards...")
+    print("🚀 Running Portfolio Risk & Allocation Engine...")
     nifty_spot, india_vix, macro_environment = gather_macro_index_telemetry()
     
     my_portfolio = [
@@ -129,31 +132,20 @@ if __name__ == "__main__":
         base_weight = (asset["score"] / total_pool_score) * 100
         asset["weight"] = round(base_weight * equity_multiplier, 1)
 
-    for asset in processed_assets:
-        t = asset["ticker"]
-        old_w = previous_weights.get(t, asset["weight"])
-        new_w = asset["weight"]
-        shift = round(new_w - old_w, 1)
-        
-        if abs(shift) >= 5.0:
-            if shift > 0:
-                action = f"📥 Price near Support (₹{asset['floor']}). Allocation +{shift}%."
-            else:
-                action = f"📤 Rally near Resistance (₹{asset['ceiling']}). Trim position by {shift}%."
-            variance_alerts.append(f"⚖️ *STAKE SHIFT FOR {t}:* {old_w}% ➡️ {new_w}%\n💡 *Action:* {action}")
-
-    # Force a structured text summary message on every run
+    # Compile table lines ensuring strict backtick wrapping to support monospace font tables
     summary_rows = [f"`{a['ticker']:<10} | ₹{str(a['price']):<6} | ₹{str(a['floor']):<5} | ₹{str(a['stop_loss']):<5} | {str(a['weight'])+'%':<5}`" for a in processed_assets]
     telegram_payload = f"📋 *DAILY RISK CONTROL HEALTH REPORT*\n" \
                        f"🌐 *Nifty 50:* {nifty_spot} | *Macro:* {macro_environment}\n\n" \
                        f"`TICKER     | CMP    | FLOOR | STOP  | WEIGHT`\n`------------------------------------------------`\n" + "\n".join(summary_rows)
     
+    # Direct transmission command to send the final message layout
     if stop_loss_alerts:
         emergency_payload = "🚨🔴 *PORTFOLIO CRISIS ALERT* 🔴🚨\n\n" + "\n\n=============\n\n".join(stop_loss_alerts)
         push_telegram_notification(emergency_payload)
     else:
         push_telegram_notification(telegram_payload)
 
+    # Save historical metrics database updates
     os.makedirs("docs", exist_ok=True)
     today_str = datetime.now().strftime("%Y-%m-%d")
     new_rows = [{"date": today_str, "ticker": a["ticker"], "price": a["price"], "floor": a["floor"], "ceiling": a["ceiling"], "weight": a["weight"]} for a in processed_assets]
