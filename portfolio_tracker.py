@@ -185,11 +185,18 @@ if __name__ == "__main__":
             action = f"📥 Deploy allocation +{shift}%." if shift > 0 else f"📤 Trim position by {shift}%."
             variance_alerts.append(f"⚖️ *STAKE SHIFT FOR {t}:* {old_w}% ➡️ {new_w}%\n💡 *Action:* {action}")
 
-    # Push Telegram Notifications
-    if trailing_sl_alerts:
-        push_telegram_notification("🚨⚠️ *PROFIT PROTECTION ALERT* ⚠️🚨\n\n" + "\n\n=============\n\n".join(trailing_sl_alerts))
-    if variance_alerts and not trailing_sl_alerts:
-        push_telegram_notification("🔄 *PORTFOLIO REBALANCER UPDATE*\n\n" + "\n\n=============\n\n".join(variance_alerts))
+    # Force a comprehensive daily report notification to your phone every run
+    summary_rows = [f"`{a['ticker']:<10} | ₹{str(a['price']):<6} | ₹{str(a['floor']):<5} | ₹{str(a['stop_loss']):<5} | {str(a['weight'])+'%':<5}`" for a in processed_assets]
+    telegram_payload = f"📋 *DAILY RISK CONTROL HEALTH REPORT*\n" \
+                       f"🌐 *Nifty 50:* {nifty_spot} | *Macro:* {macro_environment}\n\n" \
+                       f"`TICKER     | CMP    | FLOOR | STOP  | WEIGHT`\n`------------------------------------------------`\n" + "\n".join(summary_rows)
+    
+    # Send emergency alerts first if they exist, otherwise send the standard summary table
+    if stop_loss_alerts:
+        emergency_payload = "🚨🔴 *PORTFOLIO REBALANCER CRISIS* 🔴🚨\n\n" + "\n\n=============\n\n".join(stop_loss_alerts)
+        push_telegram_notification(emergency_payload)
+    else:
+        push_telegram_notification(telegram_payload)
 
     # Append Clean Logs to the Persistent CSV Database File
     os.makedirs("docs", exist_ok=True)
